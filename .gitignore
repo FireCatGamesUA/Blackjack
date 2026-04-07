@@ -1,0 +1,49 @@
+```
+# Dependencies
+node_modules/
+node_modules/**/*
+!.gitignore
+
+# Build outputs
+dist/
+build/
+.next/
+.next/**/*
+!.gitignore
+.nuxt/
+.nuxt/**/*
+!.gitignore
+out/
+
+# TypeScript/JavaScript
+*.tsbuildinfo
+*.js.map
+*.ts.map
+
+# Prisma
+prisma/migrations/
+prisma/schema.prisma.bak
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+.nyc_output/
+```
