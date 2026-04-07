@@ -1,34 +1,50 @@
 ```
 # Dependencies
 node_modules/
-node_modules/**/*
-!.gitignore
+backend/node_modules/
+frontend/node_modules/
 
 # Build outputs
-dist/
+backend/dist/
+frontend/.next/
+frontend/out/
 build/
-.next/
-.next/**/*
-!.gitignore
-.nuxt/
-.nuxt/**/*
-!.gitignore
-out/
+target/
 
-# TypeScript/JavaScript
-*.tsbuildinfo
-*.js.map
-*.ts.map
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Prisma
 prisma/migrations/
-prisma/schema.prisma.bak
 
-# Environment variables
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # IDE files
 .vscode/
@@ -36,14 +52,15 @@ prisma/schema.prisma.bak
 *.swp
 *.swo
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Coverage
+# Testing
 coverage/
 .nyc_output/
+.mypy_cache/
+.pytest_cache/
+jest-coverage/
+
+# Temporary files
+*.tmp
+*.temp
+*~
 ```
