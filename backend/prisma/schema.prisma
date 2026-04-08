@@ -21,7 +21,6 @@ model User {
   
   wallet    Wallet?
   sessions  Session[]
-  hands     PlayerHand[]
   rounds    GameRoundPlayer[]
   seats     Seat[]
   
