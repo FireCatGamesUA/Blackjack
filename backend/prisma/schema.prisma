@@ -23,6 +23,7 @@ model User {
   sessions  Session[]
   hands     PlayerHand[]
   rounds    GameRoundPlayer[]
+  seats     Seat[]
   
   @@index([email])
   @@index([username])
@@ -204,7 +205,6 @@ model PlayerHand {
   dealtAt       DateTime    @default(now())
   
   roundPlayer   GameRoundPlayer @relation(fields: [roundPlayerId], references: [id], onDelete: Cascade)
-  user          User            @relation(fields: [roundPlayerId], references: [userId])
   
   @@index([roundPlayerId])
 }
