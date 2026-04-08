@@ -1,0 +1,209 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER & AUTHENTICATION
+// ==========================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  password  String   // Hashed password
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  wallet    Wallet?
+  sessions  Session[]
+  rounds    GameRoundPlayer[]
+  seats     Seat[]
+  
+  @@index([email])
+  @@index([username])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique // JWT or session token
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+}
+
+// ==========================================
+// WALLET & ECONOMY
+// ==========================================
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Decimal  @default(1000.00) @db.Decimal(12, 2) // Start with 1000 virtual coins
+  currency  String   @default("COIN")
+  version   Int      @default(0) // Optimistic locking version
+  
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  
+  @@index([userId])
+}
+
+enum TransactionType {
+  DEPOSIT
+  BET_LOCK
+  BET_RELEASE
+  WIN
+  LOSS
+  DAILY_REWARD
+  ADJUSTMENT
+}
+
+model Transaction {
+  id        String          @id @default(uuid())
+  walletId  String
+  type      TransactionType
+  amount    Decimal         @db.Decimal(12, 2)
+  balanceAfter Decimal      @db.Decimal(12, 2)
+  referenceId String?       // ID of bet, round, etc.
+  createdAt DateTime        @default(now())
+  
+  wallet    Wallet          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  @@index([walletId])
+  @@index([createdAt])
+  @@index([referenceId])
+}
+
+// ==========================================
+// GAME TABLES & SEATS
+// ==========================================
+
+enum TableStatus {
+  WAITING
+  BETTING
+  PLAYING
+  DEALER_TURN
+  SETTLING
+  FULL
+}
+
+model GameTable {
+  id          String      @id @default(uuid())
+  name        String
+  minBet      Decimal     @default(10.0) @db.Decimal(10, 2)
+  maxBet      Decimal     @default(1000.0) @db.Decimal(10, 2)
+  status      TableStatus @default(WAITING)
+  deckCount   Int         @default(6) // Number of decks in shoe
+  currentShoe String?     // JSON string of remaining cards (encrypted/obfuscated in prod)
+  dealerCard1 String?     // First dealer card (visible)
+  dealerCard2 String?     // Second dealer card (hidden until reveal)
+  
+  seats       Seat[]
+  rounds      GameRound[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  @@index([status])
+  @@index([minBet, maxBet])
+}
+
+model Seat {
+  id          String      @id @default(uuid())
+  tableId     String
+  position    Int         // 0-6 (7 seats max)
+  userId      String?
+  currentBet  Decimal     @default(0) @db.Decimal(10, 2)
+  isActive    Boolean     @default(false) // Is player sitting here?
+  
+  table       GameTable   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [userId], references: [id])
+  
+  @@unique([tableId, position])
+  @@index([userId])
+}
+
+// ==========================================
+// GAME ROUNDS & HANDS
+// ==========================================
+
+enum RoundStatus {
+  BETTING
+  DEALT
+  PLAYER_TURN
+  DEALER_PLAY
+  FINISHED
+}
+
+enum HandStatus {
+  ACTIVE
+  HIT
+  STAND
+  DOUBLED
+  SPLIT
+  BUST
+  BLACKJACK
+  PUSH
+  WIN
+  LOSE
+}
+
+model GameRound {
+  id            String      @id @default(uuid())
+  tableId       String
+  status        RoundStatus @default(BETTING)
+  dealerScore   Int?
+  dealerHasBlackjack Boolean @default(false)
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  
+  table         GameTable       @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  players       GameRoundPlayer[]
+  
+  @@index([tableId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model GameRoundPlayer {
+  id            String      @id @default(uuid())
+  roundId       String
+  userId        String
+  seatId        String
+  handStatus    HandStatus  @default(ACTIVE)
+  score         Int         @default(0)
+  betAmount     Decimal     @db.Decimal(10, 2)
+  payout        Decimal     @default(0) @db.Decimal(10, 2)
+  isBlackjack   Boolean     @default(false)
+  insuranceBet  Decimal     @default(0) @db.Decimal(10, 2)
+  
+  round         GameRound   @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id])
+  hands         PlayerHand[]
+  
+  @@index([roundId])
+  @@index([userId])
+  @@index([seatId])
+}
+
+model PlayerHand {
+  id            String      @id @default(uuid())
+  roundPlayerId String
+  cards         String      // JSON array of cards e.g. ["H-A", "D-10"]
+  score         Int
+  isSplit       Boolean     @default(false)
+  status        HandStatus  @default(ACTIVE)
+  dealtAt       DateTime    @default(now())
+  
+  roundPlayer   GameRoundPlayer @relation(fields: [roundPlayerId], references: [id], onDelete: Cascade)
+  
+  @@index([roundPlayerId])
+}
